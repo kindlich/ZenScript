@@ -16,9 +16,10 @@ import java.util.List;
 public class JavaMethod implements IJavaMethod {
 
     public static final int PRIORITY_INVALID = -1;
-    public static final int PRIORITY_LOW = 1;
-    public static final int PRIORITY_MEDIUM = 2;
-    public static final int PRIORITY_HIGH = 3;
+    public static final int PRIORITY_CONTRACT_VIOLATED = 1;
+    public static final int PRIORITY_LOW = 2;
+    public static final int PRIORITY_MEDIUM = 3;
+    public static final int PRIORITY_HIGH = 4;
     private final Method method;
     public final boolean returnsSelf;
     private final ZenType[] parameterTypes;
@@ -72,7 +73,7 @@ public class JavaMethod implements IJavaMethod {
         return new JavaMethod(method, types);
     }
 
-    public static IJavaMethod select(boolean doStatic, List<IJavaMethod> methods, IEnvironmentGlobal environment, Expression... arguments) {
+    public static IJavaMethod select(boolean doStatic, List<IJavaMethod> methods, IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
         int bestPriority = PRIORITY_INVALID;
         IJavaMethod bestMethod = null;
         boolean isValid = false;
@@ -81,7 +82,7 @@ public class JavaMethod implements IJavaMethod {
             if(method.isStatic() != doStatic)
                 continue;
 
-            int priority = method.getPriority(environment, arguments);
+            int priority = method.getPriority(environment, position, arguments);
             if(priority == bestPriority) {
                 isValid = false;
             } else if(priority > bestPriority) {
@@ -274,7 +275,7 @@ public class JavaMethod implements IJavaMethod {
 
     @Override
     public boolean accepts(IEnvironmentGlobal environment, Expression... arguments) {
-        return getPriority(environment, arguments) > 0;
+        return getPriority(environment, null, arguments) > 0;
     }
 
     @Override
@@ -294,7 +295,7 @@ public class JavaMethod implements IJavaMethod {
     }
 
     @Override
-    public int getPriority(IEnvironmentGlobal environment, Expression... arguments) {
+    public int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
         int result = PRIORITY_HIGH;
         if(arguments.length > parameterTypes.length) {
             if(method.isVarArgs()) {
@@ -354,6 +355,63 @@ public class JavaMethod implements IJavaMethod {
                 } else {
                     return PRIORITY_INVALID;
                 }
+            }
+        }
+    
+        final Annotation[][] parameterTypes = method.getParameterAnnotations();
+        for(int i = 0; i < checkUntil; i++) {
+    
+            ZenContractNumeric annotation = null;
+            {
+                for(Annotation annotation1 : parameterTypes[i]) {
+                    if(annotation1 instanceof ZenContractNumeric) {
+                        annotation = (ZenContractNumeric) annotation1;
+                        break;
+                    }
+                }
+                if(annotation == null) continue;
+            }
+            final Expression argument = arguments[i];
+            
+            final double value;
+            if(argument instanceof ExpressionInt) {
+                value = ((ExpressionInt) argument).getValue();
+            } else if (argument instanceof ExpressionFloat) {
+                value = ((ExpressionFloat) argument).getValue();
+            } else continue;
+            
+            
+            
+            final int compareResult = Double.compare(value, annotation.value());
+            
+            final boolean matches;
+            switch(annotation.compareType()){
+                case LT:
+                    matches = compareResult < 0;
+                    break;
+                case GT:
+                    matches = compareResult > 0;
+                    break;
+                case EQ:
+                    matches = compareResult == 0;
+                    break;
+                case NE:
+                    matches = compareResult != 0;
+                    break;
+                case LE:
+                    matches = compareResult <= 0;
+                    break;
+                case GE:
+                    matches =compareResult >= 0;
+                    break;
+                default:
+                    matches = false;
+            }
+            
+            if(!matches) {
+                if(position != null)
+                    environment.warning(position, "Contract violated: Input " + value + " is not " + annotation.compareType() + " " + annotation.value());
+                return PRIORITY_CONTRACT_VIOLATED;
             }
         }
 

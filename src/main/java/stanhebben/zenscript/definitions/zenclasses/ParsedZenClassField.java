@@ -8,6 +8,7 @@ import stanhebben.zenscript.parser.expression.ParsedExpression;
 import stanhebben.zenscript.type.ZenType;
 import stanhebben.zenscript.type.natives.*;
 import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
 import static stanhebben.zenscript.ZenTokener.*;
 
@@ -96,7 +97,7 @@ public class ParsedZenClassField {
         }
 
         @Override
-        public int getPriority(IEnvironmentGlobal environment, Expression... arguments) {
+        public int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
             return accepts(environment, arguments) ? JavaMethod.PRIORITY_LOW : JavaMethod.PRIORITY_INVALID;
         }
 

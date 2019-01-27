@@ -75,4 +75,8 @@ public class ExpressionInt extends Expression {
             throw new RuntimeException("Internal compiler error: int constant type is not an int");
         }
     }
+    
+    public long getValue() {
+        return value;
+    }
 }

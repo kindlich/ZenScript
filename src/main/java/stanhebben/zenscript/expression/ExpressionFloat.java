@@ -46,4 +46,8 @@ public class ExpressionFloat extends Expression {
             throw new RuntimeException("Internal compiler error: source type is not a floating point type");
         }
     }
+    
+    public double getValue() {
+        return value;
+    }
 }

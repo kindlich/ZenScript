@@ -5,6 +5,7 @@ import stanhebben.zenscript.compiler.*;
 import stanhebben.zenscript.expression.Expression;
 import stanhebben.zenscript.type.ZenType;
 import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
 import java.lang.reflect.Field;
 
@@ -37,7 +38,7 @@ public class ZenFieldMethod implements IJavaMethod {
     }
     
     @Override
-    public int getPriority(IEnvironmentGlobal environment, Expression... arguments) {
+    public int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
         return 0;
     }
     

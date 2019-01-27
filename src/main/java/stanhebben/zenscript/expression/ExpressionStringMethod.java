@@ -94,7 +94,7 @@ public class ExpressionStringMethod implements IPartialExpression {
     
     @Override
     public Expression call(ZenPosition position, IEnvironmentMethod environment, Expression... values) {
-        IJavaMethod method = JavaMethod.select(false, methods, environment, values);
+        IJavaMethod method = JavaMethod.select(false, methods, environment, position, values);
         if(method == null) {
             environment.error(position, methodMatchingError(methods, values));
             return new ExpressionInvalid(position);

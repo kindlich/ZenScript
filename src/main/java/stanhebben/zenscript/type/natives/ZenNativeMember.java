@@ -11,7 +11,6 @@ import stanhebben.zenscript.util.ZenPosition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
 
 import static stanhebben.zenscript.util.StringUtil.methodMatchingError;
 
@@ -101,7 +100,7 @@ public class ZenNativeMember {
         
         @Override
         public Expression call(ZenPosition position, IEnvironmentMethod environment, Expression... values) {
-            IJavaMethod method = JavaMethod.select(false, methods, environment, values);
+            IJavaMethod method = JavaMethod.select(false, methods, environment, position, values);
             if(method == null) {
                 environment.error(position, methodMatchingError(methods, values));
                 return new ExpressionInvalid(position);
@@ -166,7 +165,7 @@ public class ZenNativeMember {
         
         @Override
         public Expression call(ZenPosition position, IEnvironmentMethod environment, Expression... values) {
-            IJavaMethod method = JavaMethod.select(true, methods, environment, values);
+            IJavaMethod method = JavaMethod.select(true, methods, environment, position, values);
             if(method == null) {
                 environment.error(position, methodMatchingError(methods, values));
                 return new ExpressionInvalid(position);

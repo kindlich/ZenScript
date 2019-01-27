@@ -86,7 +86,7 @@ public class ZenExpandMember {
             Expression[] newValues = new Expression[values.length + 1];
             newValues[0] = value.eval(environment);
             System.arraycopy(values, 0, newValues, 1, values.length);
-            IJavaMethod method = JavaMethod.select(true, methods, environment, newValues);
+            IJavaMethod method = JavaMethod.select(true, methods, environment, position, newValues);
             if(method == null) {
                 environment.error(position, methodMatchingError(methods, values));
                 return new ExpressionInvalid(position);
@@ -154,7 +154,7 @@ public class ZenExpandMember {
 
         @Override
         public Expression call(ZenPosition position, IEnvironmentMethod environment, Expression... values) {
-            IJavaMethod method = JavaMethod.select(true, methods, environment, values);
+            IJavaMethod method = JavaMethod.select(true, methods, environment, position, values);
             if(method == null) {
                 environment.error(position, methodMatchingError(methods, values));
                 return new ExpressionInvalid(position);

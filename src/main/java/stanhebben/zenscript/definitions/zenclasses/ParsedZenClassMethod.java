@@ -11,8 +11,8 @@ import stanhebben.zenscript.symbols.SymbolArgument;
 import stanhebben.zenscript.type.*;
 import stanhebben.zenscript.type.natives.*;
 import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
-import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -137,7 +137,7 @@ public class ParsedZenClassMethod {
         }
         
         @Override
-        public int getPriority(IEnvironmentGlobal environment, Expression... arguments) {
+        public int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
             return matchesExact(arguments) ? JavaMethod.PRIORITY_HIGH : accepts(environment, arguments) ? JavaMethod.PRIORITY_LOW : JavaMethod.PRIORITY_INVALID;
         }
         

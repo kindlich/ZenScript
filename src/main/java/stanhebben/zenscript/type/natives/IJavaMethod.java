@@ -4,6 +4,7 @@ import stanhebben.zenscript.compiler.IEnvironmentGlobal;
 import stanhebben.zenscript.expression.Expression;
 import stanhebben.zenscript.type.ZenType;
 import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
 /**
  * @author Stan
@@ -16,7 +17,7 @@ public interface IJavaMethod {
     
     boolean accepts(IEnvironmentGlobal environment, Expression... arguments);
     
-    int getPriority(IEnvironmentGlobal environment, Expression... arguments);
+    int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments);
     
     void invokeVirtual(MethodOutput output);
     

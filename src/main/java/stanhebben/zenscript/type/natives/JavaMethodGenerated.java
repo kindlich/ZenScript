@@ -4,6 +4,7 @@ import stanhebben.zenscript.compiler.IEnvironmentGlobal;
 import stanhebben.zenscript.expression.Expression;
 import stanhebben.zenscript.type.*;
 import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
 import static stanhebben.zenscript.type.natives.JavaMethod.*;
 
@@ -78,11 +79,11 @@ public class JavaMethodGenerated implements IJavaMethod {
     
     @Override
     public boolean accepts(IEnvironmentGlobal environment, Expression... arguments) {
-        return getPriority(environment, arguments) > 0;
+        return getPriority(environment, null, arguments) > 0;
     }
     
     @Override
-    public int getPriority(IEnvironmentGlobal environment, Expression... arguments) {
+    public int getPriority(IEnvironmentGlobal environment, ZenPosition position, Expression... arguments) {
         int result = PRIORITY_HIGH;
         if(arguments.length > parameterTypes.length) {
             if(isVarargs) {
