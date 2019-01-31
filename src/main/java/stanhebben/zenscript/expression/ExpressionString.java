@@ -28,4 +28,8 @@ public class ExpressionString extends Expression {
             environment.getOutput().constant(value);
         }
     }
+    
+    public String getValue() {
+        return value;
+    }
 }

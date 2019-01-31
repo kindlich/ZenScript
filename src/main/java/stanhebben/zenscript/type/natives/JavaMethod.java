@@ -1,13 +1,23 @@
 package stanhebben.zenscript.type.natives;
 
-import stanhebben.zenscript.annotations.*;
-import stanhebben.zenscript.compiler.*;
+import stanhebben.zenscript.annotations.ContractAnnotations;
+import stanhebben.zenscript.annotations.Optional;
+import stanhebben.zenscript.annotations.ReturnsSelf;
+import stanhebben.zenscript.compiler.IEnvironmentGlobal;
+import stanhebben.zenscript.compiler.ITypeRegistry;
 import stanhebben.zenscript.expression.*;
-import stanhebben.zenscript.type.*;
-import stanhebben.zenscript.util.*;
+import stanhebben.zenscript.type.ZenType;
+import stanhebben.zenscript.type.ZenTypeArray;
+import stanhebben.zenscript.type.ZenTypeArrayBasic;
+import stanhebben.zenscript.util.ArrayUtil;
+import stanhebben.zenscript.util.MethodOutput;
+import stanhebben.zenscript.util.ZenPosition;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -361,31 +371,39 @@ public class JavaMethod implements IJavaMethod {
         final Annotation[][] parameterTypes = method.getParameterAnnotations();
         for(int i = 0; i < checkUntil; i++) {
     
-            ZenContractNumeric annotation = null;
-            {
-                for(Annotation annotation1 : parameterTypes[i]) {
-                    if(annotation1 instanceof ZenContractNumeric) {
-                        annotation = (ZenContractNumeric) annotation1;
-                        break;
-                    }
+            for(Annotation annotation : parameterTypes[i]) {
+                if(annotation instanceof ContractAnnotations.ZenContractNumericStore
+                        && !handleContractNumeric((ContractAnnotations.ZenContractNumericStore) annotation, arguments[i], position, environment)) {
+                    return PRIORITY_CONTRACT_VIOLATED;
+                } else if (annotation instanceof ContractAnnotations.ZenContractStringValidationMethodStore
+                    && !handleContractStringValidationMethod((ContractAnnotations.ZenContractStringValidationMethodStore) annotation, arguments[i], position, environment)) {
+                    return PRIORITY_CONTRACT_VIOLATED;
                 }
-                if(annotation == null) continue;
+                
+                
             }
-            final Expression argument = arguments[i];
             
-            final double value;
-            if(argument instanceof ExpressionInt) {
-                value = ((ExpressionInt) argument).getValue();
-            } else if (argument instanceof ExpressionFloat) {
-                value = ((ExpressionFloat) argument).getValue();
-            } else continue;
-            
-            
-            
+    
+        }
+
+        return result;
+    }
+    
+    private static boolean handleContractNumeric(final ContractAnnotations.ZenContractNumericStore storeAnnotation, final Expression argument, ZenPosition position, IEnvironmentGlobal environment) {
+        final double value;
+        if(argument instanceof ExpressionInt)
+            value = ((ExpressionInt) argument).getValue();
+        else if(argument instanceof ExpressionFloat)
+            value = ((ExpressionFloat) argument).getValue();
+        else
+            return false;
+    
+        boolean matchesAll = true;
+        for (ContractAnnotations.ZenContractNumeric annotation: storeAnnotation.value()){
             final int compareResult = Double.compare(value, annotation.value());
-            
+    
             final boolean matches;
-            switch(annotation.compareType()){
+            switch(annotation.compareType()) {
                 case LT:
                     matches = compareResult < 0;
                     break;
@@ -402,22 +420,56 @@ public class JavaMethod implements IJavaMethod {
                     matches = compareResult <= 0;
                     break;
                 case GE:
-                    matches =compareResult >= 0;
+                    matches = compareResult >= 0;
                     break;
                 default:
                     matches = false;
             }
-            
+    
             if(!matches) {
                 if(position != null)
-                    environment.warning(position, "Contract violated: Input " + value + " is not " + annotation.compareType() + " " + annotation.value());
-                return PRIORITY_CONTRACT_VIOLATED;
+                    environment.warning(position, "Contract violated: Input " + value + " is not " + annotation.compareType() + " " + annotation
+                            .value());
             }
+            matchesAll &= matches;
         }
-
-        return result;
+        return matchesAll;
     }
 
+    private boolean handleContractStringValidationMethod(ContractAnnotations.ZenContractStringValidationMethodStore storeAnnotation, Expression argument, ZenPosition position, IEnvironmentGlobal environment) {
+        final String value;
+        if(argument instanceof ExpressionInt)
+            value = String.valueOf(((ExpressionInt) argument).getValue());
+        else if(argument instanceof ExpressionFloat)
+            value = String.valueOf(((ExpressionFloat) argument).getValue());
+        else if (argument instanceof ExpressionString)
+            value = ((ExpressionString)argument).getValue();
+        else
+            return false;
+        boolean matchesAll = true;
+        for(ContractAnnotations.ZenContractStringValidationMethod annotation : storeAnnotation.value()) {
+            final Class<?> clazz = annotation.declaringClazz();
+            final Class[] parameterTypes = new Class[1 + annotation.additionalParameters().length];
+            Arrays.fill(parameterTypes, String.class);
+    
+            try {
+                final Method method = clazz.getMethod(annotation.methodName(), parameterTypes);
+                if(!Modifier.isStatic(method.getModifiers())) throw new IllegalArgumentException("Method " + method.toGenericString() + " is not static");
+                if(method.getReturnType() != String.class) throw new IllegalArgumentException("Method " + method.toGenericString() + " does not return String");
+                String errorMessage = (String) method.invoke(null, (Object[]) ArrayUtil.add(annotation.additionalParameters(), value));
+                matchesAll &= errorMessage == null;
+                if(errorMessage != null && position != null)
+                    environment.error(position, errorMessage);
+            } catch(Throwable e) {
+                if(position != null)
+                    environment.error(position, "Error validating parameter for " + this.method.toGenericString() + ": " + e.getMessage());
+                else
+                    environment.error("Error validating parameter for " + this.method.toGenericString(), e);
+            }
+    
+        }
+        return matchesAll;
+    }
     @Override
     public void invokeVirtual(MethodOutput output) {
         if(isStatic()) {
